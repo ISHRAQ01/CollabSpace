@@ -13,6 +13,7 @@ pom.xml.releaseBackup
 pom.xml.versionsBackup
 release.properties
 .mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
 
 # IDE
 .idea/
@@ -24,6 +25,7 @@ release.properties
 .project
 .classpath
 .factorypath
+*.code-workspace
 
 # OS
 .DS_Store
@@ -31,31 +33,88 @@ Thumbs.db
 *.swp
 *.swo
 *~
+$RECYCLE.BIN/
 
 # Environment & Secrets
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 application-local.yml
+application-dev.yml
+application-prod.yml
 *.jks
 *.p12
 *.key
 *.pem
+*.crt
 
 # Logs
 *.log
 logs/
 spring.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Docker
 docker/volumes/
 docker/data/
+*.pid
 
-# Node (for frontend later)
+# Node (frontend)
 node_modules/
 dist/
 .next/
 out/
+build/
+.npm/
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+.vercel
+*.tsbuildinfo
 
 # Testing
 coverage/
 .nyc_output/
+.cypress/
+jest.config.js
+vitest.config.*
+
+# TypeScript
+*.tsbuildinfo
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+backup/
+*.backup
+*.old
+
+# AI/ML
+*.bin
+*.gguf
+*.onnx
+ollama/
+models/
+
+# CI/CD
+.github/workflows/*.local.yml
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
