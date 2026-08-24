@@ -1,0 +1,70 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: docusync-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-docusync_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-docusync_user} -d ${POSTGRES_DB:-docusync_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - docusync-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: docusync-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_secure_password_2024} --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - docusync-network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: docusync-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - docusync-network
+    profiles:
+      - ai
+      - full
+
+volumes:
+  postgres_data:
+    name: docusync-postgres-data
+  redis_data:
+    name: docusync-redis-data
+  ollama_data:
+    name: docusync-ollama-data
+
+networks:
+  docusync-network:
+    name: docusync-network
+    driver: bridge
