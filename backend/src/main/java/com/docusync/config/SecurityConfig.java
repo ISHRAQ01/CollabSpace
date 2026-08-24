@@ -1,5 +1,6 @@
 package com.docusync.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import com.docusync.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

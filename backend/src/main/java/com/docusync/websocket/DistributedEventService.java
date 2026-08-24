@@ -1,4 +1,4 @@
-package com.docusync.service;
+package com.docusync.websocket;
 
 import com.docusync.websocket.SessionManager;
 import com.docusync.websocket.dto.SyncMessage;
@@ -180,7 +180,7 @@ public class DistributedEventService {
      */
     public java.util.Set<String> getActiveUsers(String documentId) {
         String key = DOCUMENT_USERS_PREFIX + documentId;
-        return redisTemplate.opsForSet().members(key);
+        return (java.util.Set<String>) (java.util.Set<?>) redisTemplate.opsForSet().members(key);
     }
     
     /**
