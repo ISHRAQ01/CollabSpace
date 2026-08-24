@@ -52,11 +52,28 @@ export default function RegisterPage() {
         password: data.password,
       });
       
-      const { user, token, refreshToken } = response.data;
+      console.log('Register response:', response.data);
+      
+      // Handle different response structures
+      const responseData = response.data;
+      const user = responseData.user || {
+        id: responseData.userId,
+        email: responseData.email,
+        username: responseData.username,
+        fullName: responseData.fullName,
+      };
+      const token = responseData.token || responseData.accessToken;
+      const refreshToken = responseData.refreshToken;
+      
+      if (!token || !refreshToken) {
+        throw new Error('Invalid response from server');
+      }
+      
       setAuth(user, token, refreshToken);
       router.push('/documents');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to register. Please try again.');
+      console.error('Register error:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to register');
     } finally {
       setLoading(false);
     }

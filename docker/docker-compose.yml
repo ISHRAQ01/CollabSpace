@@ -1,6 +1,23 @@
-version: '3.9'
+﻿version: '3.9'
 
 services:
+  # Frontend Service
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: docusync-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+      NEXT_PUBLIC_WS_URL: ws://localhost:8080/api/v1/sync
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - docusync-network
+
   # Backend Service
   backend:
     build:
@@ -18,7 +35,6 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
       SERVER_PORT: 8080
     ports:
@@ -31,7 +47,7 @@ services:
     networks:
       - docusync-network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/v1/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -76,72 +92,11 @@ services:
       timeout: 5s
       retries: 5
 
-  # Ollama for AI (Optional)
-  ollama:
-    image: ollama/ollama:latest
-    container_name: docusync-ollama
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_KEEP_ALIVE=24h
-    networks:
-      - docusync-network
-    profiles:
-      - ai
-      - full
-
-  # Prometheus for monitoring
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: docusync-prometheus
-    restart: unless-stopped
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    ports:
-      - "9090:9090"
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-    networks:
-      - docusync-network
-    profiles:
-      - monitoring
-      - full
-
-  # Grafana for dashboards
-  grafana:
-    image: grafana/grafana:latest
-    container_name: docusync-grafana
-    restart: unless-stopped
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
-    ports:
-      - "3001:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-    networks:
-      - docusync-network
-    profiles:
-      - monitoring
-      - full
-    depends_on:
-      - prometheus
-
 volumes:
   postgres_data:
     name: docusync-postgres-data
   redis_data:
     name: docusync-redis-data
-  ollama_data:
-    name: docusync-ollama-data
-  prometheus_data:
-    name: docusync-prometheus-data
-  grafana_data:
-    name: docusync-grafana-data
 
 networks:
   docusync-network:

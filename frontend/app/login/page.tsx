@@ -14,7 +14,7 @@ import { FileText } from 'lucide-react';
 import Link from 'next/link';
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  identifier: z.string().min(1, 'Email or username is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -23,6 +23,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -39,12 +40,38 @@ export default function LoginPage() {
     setError(null);
     
     try {
-      const response = await authAPI.login(data);
-      const { user, token, refreshToken } = response.data;
+      // Clear any old auth data first
+      clearAuth();
+      
+      console.log('Login data:', data);
+      const response = await authAPI.login({
+        identifier: data.identifier,
+        password: data.password,
+      });
+      
+      console.log('Login response:', response.data);
+      
+      // Handle different response structures
+      const responseData = response.data;
+      const user = responseData.user || {
+        id: responseData.userId,
+        email: responseData.email,
+        username: responseData.username,
+        fullName: responseData.fullName,
+      };
+      const token = responseData.token || responseData.accessToken;
+      const refreshToken = responseData.refreshToken;
+      
+      if (!token || !refreshToken) {
+        throw new Error('Invalid response from server');
+      }
+      
+      console.log('Setting auth with user:', user);
       setAuth(user, token, refreshToken);
       router.push('/documents');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to login. Please check your credentials.');
+      console.error('Login error:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to login');
     } finally {
       setLoading(false);
     }
@@ -73,15 +100,15 @@ export default function LoginPage() {
             
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email address
+                <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email or Username
                 </label>
                 <Input
-                  id="email"
-                  type="email"
+                  id="identifier"
+                  type="text"
                   placeholder="you@example.com"
-                  {...register('email')}
-                  error={errors.email?.message}
+                  {...register('identifier')}
+                  error={errors.identifier?.message}
                 />
               </div>
               

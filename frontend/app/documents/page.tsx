@@ -8,14 +8,14 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
-import { Plus, FileText, Users, Clock, Trash2, Search, LogOut } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, Search, LogOut } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Document {
   id: string;
   title: string;
   content: string;
-  ownerId: string;
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -29,6 +29,7 @@ export default function DocumentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewDocDialog, setShowNewDocDialog] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     loadDocuments();
@@ -37,9 +38,19 @@ export default function DocumentsPage() {
   const loadDocuments = async () => {
     try {
       const response = await documentAPI.list();
-      setDocuments(response.data);
+      console.log('Documents response:', response.data);
+      
+      // Handle both Page and array responses
+      if (response.data.content) {
+        setDocuments(response.data.content);
+      } else if (Array.isArray(response.data)) {
+        setDocuments(response.data);
+      } else {
+        setDocuments([]);
+      }
     } catch (error) {
       console.error('Failed to load documents:', error);
+      setDocuments([]);
     } finally {
       setLoading(false);
     }
@@ -48,18 +59,28 @@ export default function DocumentsPage() {
   const createDocument = async () => {
     if (!newDocTitle.trim()) return;
     
+    setCreating(true);
     try {
       const response = await documentAPI.create({
         title: newDocTitle,
         content: '',
       });
       
-      setDocuments([response.data, ...documents]);
+      console.log('Created document:', response.data);
       setShowNewDocDialog(false);
       setNewDocTitle('');
-      router.push(`/documents/${response.data.id}`);
-    } catch (error) {
+      
+      // Navigate to the new document
+      if (response.data.id) {
+        router.push(`/documents/${response.data.id}`);
+      } else {
+        loadDocuments();
+      }
+    } catch (error: any) {
       console.error('Failed to create document:', error);
+      alert(error.response?.data?.message || 'Failed to create document');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -74,18 +95,13 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await authAPI.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const handleLogout = () => {
     logout();
     router.push('/login');
   };
 
   const filteredDocuments = documents.filter((doc) =>
-    doc.title.toLowerCase().includes(searchTerm.toLowerCase())
+    doc.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -141,6 +157,10 @@ export default function DocumentsPage() {
             <p className="mt-2 text-sm text-gray-500">
               Create your first document to get started!
             </p>
+            <Button className="mt-4" onClick={() => setShowNewDocDialog(true)}>
+              <Plus className="h-5 w-5 mr-2" />
+              Create Document
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -175,7 +195,7 @@ export default function DocumentsPage() {
                   <div className="flex items-center justify-between text-xs text-gray-400">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4" />
-                      {formatDistanceToNow(new Date(doc.updatedAt), { addSuffix: true })}
+                      {doc.updatedAt && formatDistanceToNow(new Date(doc.updatedAt), { addSuffix: true })}
                     </div>
                   </div>
                 </div>
@@ -203,7 +223,7 @@ export default function DocumentsPage() {
           <Button variant="secondary" onClick={() => setShowNewDocDialog(false)}>
             Cancel
           </Button>
-          <Button onClick={createDocument} disabled={!newDocTitle.trim()}>
+          <Button onClick={createDocument} loading={creating} disabled={!newDocTitle.trim()}>
             Create
           </Button>
         </div>

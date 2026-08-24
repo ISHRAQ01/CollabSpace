@@ -1,12 +1,8 @@
 ﻿'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import * as Y from 'yjs';
-import { WebsocketProvider } from 'y-websocket';
+import { useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Collaboration from '@tiptap/extension-collaboration';
-import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Undo, Redo } from 'lucide-react';
 
 interface CollaborativeEditorProps {
@@ -17,17 +13,6 @@ interface CollaborativeEditorProps {
   onSave?: (content: string) => void;
 }
 
-const colors = [
-  '#958DF1', '#F98181', '#FBBC88', '#FAF594', '#70CFF8',
-  '#94FADB', '#B9F18D', '#C3E2C2', '#EAECCC', '#AFC8AD',
-  '#EEC759', '#9BB8CD', '#FF90BC', '#FFC0D9', '#DC8686',
-  '#7ED7C1', '#F3EEEA', '#89B9AD', '#D0BFFF', '#FFF3DA',
-];
-
-const getRandomColor = () => {
-  return colors[Math.floor(Math.random() * colors.length)];
-};
-
 export function CollaborativeEditor({
   documentId,
   initialContent,
@@ -35,88 +20,25 @@ export function CollaborativeEditor({
   userName,
   onSave,
 }: CollaborativeEditorProps) {
-  const [connected, setConnected] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
-  const ydocRef = useRef<Y.Doc | null>(null);
-  const providerRef = useRef<WebsocketProvider | null>(null);
-  const userColorRef = useRef(getRandomColor());
-
-  // Initialize Yjs document and WebSocket connection
-  useEffect(() => {
-    const ydoc = new Y.Doc();
-    ydocRef.current = ydoc;
-
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws';
-    const provider = new WebsocketProvider(
-      wsUrl,
-      `document-${documentId}`,
-      ydoc,
-      {
-        connect: true,
-        params: {
-          token: localStorage.getItem('token') || '',
-        },
-      }
-    );
-    providerRef.current = provider;
-
-    provider.on('status', (event: any) => {
-      setConnected(event.status === 'connected');
-    });
-
-    provider.awareness.on('change', () => {
-      const states = Array.from(provider.awareness.getStates().entries());
-      const activeUsers = states
-        .map(([clientId, state]: [number, any]) => ({
-          clientId,
-          name: state.user?.name || 'Anonymous',
-          color: state.user?.color || '#000000',
-        }))
-        .filter((user) => user.name !== 'Anonymous');
-      setUsers(activeUsers);
-    });
-
-    // Set user awareness
-    provider.awareness.setLocalStateField('user', {
-      name: userName,
-      color: userColorRef.current,
-      id: userId,
-    });
-
-    return () => {
-      provider.destroy();
-      ydoc.destroy();
-    };
-  }, [documentId, userId, userName]);
-
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  
+  // Create editor
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        history: false,
-      }),
-      Collaboration.configure({
-        document: ydocRef.current,
-        field: 'content',
-      }),
-      CollaborationCursor.configure({
-        provider: providerRef.current,
-        user: {
-          name: userName,
-          color: userColorRef.current,
-        },
-      }),
+      StarterKit,
     ],
-    content: initialContent,
+    content: initialContent || '<p></p>',
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       if (onSave) {
         onSave(html);
       }
+      setLastSaved(new Date());
     },
   });
 
   if (!editor) {
-    return null;
+    return <div className="p-6">Loading editor...</div>;
   }
 
   const ToolbarButton = ({ onClick, active, children }: any) => (
@@ -180,23 +102,10 @@ export function CollaborativeEditor({
           <Redo className="h-4 w-4" />
         </ToolbarButton>
         
-        {/* Connection status and active users */}
+        {/* Save status */}
         <div className="ml-auto flex items-center gap-2">
-          <div className="flex -space-x-2">
-            {users.map((user) => (
-              <div
-                key={user.clientId}
-                className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-medium text-white"
-                style={{ backgroundColor: user.color }}
-                title={user.name}
-              >
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-            ))}
-          </div>
-          <div className={`flex items-center gap-1 text-xs ${connected ? 'text-green-600' : 'text-gray-400'}`}>
-            <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-gray-300'}`} />
-            {connected ? 'Connected' : 'Connecting...'}
+          <div className="text-xs text-gray-400">
+            {lastSaved ? `Saved ${lastSaved.toLocaleTimeString()}` : 'Ready'}
           </div>
         </div>
       </div>

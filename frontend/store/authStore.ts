@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface User {
@@ -16,6 +16,7 @@ interface AuthState {
   setAuth: (user: User, token: string, refreshToken: string) => void;
   setTokens: (token: string, refreshToken: string) => void;
   logout: () => void;
+  clearAuth: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -26,13 +27,15 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       isAuthenticated: false,
       
-      setAuth: (user, token, refreshToken) =>
+      setAuth: (user, token, refreshToken) => {
+        console.log('Setting auth with user:', user);
         set({
           user,
           token,
           refreshToken,
           isAuthenticated: true,
-        }),
+        });
+      },
       
       setTokens: (token, refreshToken) =>
         set({
@@ -40,16 +43,35 @@ export const useAuthStore = create<AuthState>()(
           refreshToken,
         }),
       
-      logout: () =>
+      logout: () => {
+        console.log('Logging out');
         set({
           user: null,
           token: null,
           refreshToken: null,
           isAuthenticated: false,
-        }),
+        });
+      },
+      
+      clearAuth: () => {
+        console.log('Clearing auth');
+        set({
+          user: null,
+          token: null,
+          refreshToken: null,
+          isAuthenticated: false,
+        });
+        localStorage.removeItem('docusync-auth');
+      },
     }),
     {
       name: 'docusync-auth',
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        refreshToken: state.refreshToken,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
   )
 );
