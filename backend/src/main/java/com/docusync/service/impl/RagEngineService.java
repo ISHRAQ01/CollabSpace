@@ -6,14 +6,14 @@ import com.docusync.repository.DocumentChunkRepository;
 import com.docusync.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.DocumentReader;
-import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.embedding.EmbeddingModel;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RagEngineService {
     
-    private final EmbeddingClient embeddingClient;
-    private final ChatClient chatClient;
+    private final EmbeddingModel embeddingModel;
+private final ChatModel chatModel;
     private final VectorStore vectorStore;
     private final DocumentChunkRepository chunkRepository;
     private final DocumentRepository documentRepository;

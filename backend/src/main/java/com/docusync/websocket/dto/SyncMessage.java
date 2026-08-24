@@ -36,6 +36,4 @@ public class SyncMessage {
     private long timestamp;
     private String clientId;
     
-    @Builder.Default
-    private long timestamp = System.currentTimeMillis();
 }

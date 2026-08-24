@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-/**
- * Authentication Response DTO
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -24,7 +21,4 @@ public class AuthResponse {
     private String refreshToken;
     private long expiresIn;
     private String tokenType;
-    
-    @Builder.Default
-    private String tokenType = "Bearer";
 }
